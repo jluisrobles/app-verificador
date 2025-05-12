@@ -3,9 +3,10 @@ import re
 import dns.resolver
 import streamlit as st
 
-# ----------- ESTILO PERSONALIZADO -----------
+# ----------- CONFIGURACIÓN DE LA PÁGINA -----------
 st.set_page_config(page_title="Validador de Correos Empresariales", layout="centered")
 
+# ----------- ESTILO PERSONALIZADO -----------
 custom_css = """
 <style>
     body {
@@ -19,10 +20,6 @@ custom_css = """
         padding: 2rem;
         border-radius: 15px;
         box-shadow: 0 0 20px #00ffe1;
-    }
-    .css-1v3fvcr {
-        background-color: #1e1e1e !important;
-        border-radius: 10px;
     }
     h1 {
         color: #00ffe1;
@@ -45,6 +42,8 @@ st.title("🔍 Validador de Correos Empresariales")
 dominios_publicos = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'live.com']
 
 def es_correo_valido(correo):
+    if pd.isnull(correo):
+        return False
     patron = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     return re.match(patron, correo) is not None
 
@@ -58,6 +57,9 @@ def dominio_tiene_mx(correo):
     except Exception:
         return False
 
+def resaltar_nulos(val):
+    return 'background-color: red' if pd.isnull(val) else ''
+
 # ----------- SUBIR ARCHIVO -----------
 archivo_cargado = st.file_uploader("📁 Sube tu archivo Excel (.xlsx)", type=["xlsx"])
 
@@ -65,7 +67,7 @@ if archivo_cargado:
     df = pd.read_excel(archivo_cargado)
 
     if 'E-mail' not in df.columns:
-        st.error("❌ El archivo no contiene una columna llamada 'E-mail'.")
+        st.error("❌ El archivo no contiene una columna llamada 'E-mail'. Por favor, revisa el archivo.")
     else:
         df['formato_valido'] = df['E-mail'].apply(es_correo_valido)
         df['dominio_valido'] = df['E-mail'].apply(lambda x: dominio_tiene_mx(x) if es_correo_valido(x) else False)
@@ -73,12 +75,13 @@ if archivo_cargado:
 
         st.success("✅ Verificación completada. Abajo se muestra la tabla.")
 
-        # Usamos highlightnull de pandas para resaltar los valores nulos
-        styled_df = df.style.highlightnull(null_color='red')
+        # Aplicar estilos para resaltar valores nulos
+        styled_df = df.style.applymap(resaltar_nulos)
 
-        # Mostramos el DataFrame estilizado como HTML
-        st.markdown(styled_df.render(), unsafe_allow_html=True)
+        # Mostrar tabla estilizada como HTML
+        st.markdown(styled_df.to_html(), unsafe_allow_html=True)
 
+        # Guardar y permitir descarga del resultado
         archivo_salida = "resultado_correos.xlsx"
         df.to_excel(archivo_salida, index=False)
         with open(archivo_salida, "rb") as file:
