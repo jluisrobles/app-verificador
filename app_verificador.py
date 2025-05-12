@@ -2,6 +2,7 @@ import pandas as pd
 import re
 import dns.resolver
 import streamlit as st
+import plotly.express as px
 
 # ----------- CONFIGURACIÓN DE LA PÁGINA -----------
 st.set_page_config(page_title="Validador de Correos Empresariales", layout="centered")
@@ -57,9 +58,6 @@ def dominio_tiene_mx(correo):
     except Exception:
         return False
 
-def resaltar_nulos(val):
-    return 'background-color: red' if pd.isnull(val) else ''
-
 # ----------- SUBIR ARCHIVO -----------
 archivo_cargado = st.file_uploader("📁 Sube tu archivo Excel (.xlsx)", type=["xlsx"])
 
@@ -67,25 +65,40 @@ if archivo_cargado:
     df = pd.read_excel(archivo_cargado)
 
     if 'E-mail' not in df.columns:
-        st.error("❌ El archivo no contiene una columna llamada 'E-mail'. Por favor, revisa el archivo.")
+        st.error("❌ El archivo no contiene una columna llamada 'E-mail'.")
     else:
         df['formato_valido'] = df['E-mail'].apply(es_correo_valido)
         df['dominio_valido'] = df['E-mail'].apply(lambda x: dominio_tiene_mx(x) if es_correo_valido(x) else False)
         df['correo_valido'] = df['formato_valido'] & df['dominio_valido']
 
-        st.success("✅ Verificación completada. Abajo se muestra la tabla.")
+        st.success("✅ Verificación completada.")
 
-        # Aplicar estilos para resaltar valores nulos
-        styled_df = df.style.applymap(resaltar_nulos)
+        # ----------- GRÁFICO DE RESULTADOS -----------
+        total = len(df)
+        validos = df['correo_valido'].sum()
+        invalidos_formato = ((df['formato_valido'] == False) & (df['E-mail'].notnull())).sum()
+        invalidos_dominio = ((df['formato_valido']) & (df['dominio_valido'] == False)).sum()
+        nulos = df['E-mail'].isnull().sum()
 
-        # Mostrar tabla estilizada como HTML
-        st.markdown(styled_df.to_html(), unsafe_allow_html=True)
+        datos_grafico = pd.DataFrame({
+            'Estado': ['✅ Válidos', '❌ Inválido (formato)', '⚠️ Inválido (dominio)', '🟥 Vacíos'],
+            'Cantidad': [validos, invalidos_formato, invalidos_dominio, nulos]
+        })
 
-        # Guardar y permitir descarga del resultado
+        fig = px.pie(
+            datos_grafico, 
+            names='Estado', 
+            values='Cantidad', 
+            title='📊 Distribución de Correos Validados',
+            color_discrete_sequence=px.colors.qualitative.Set3
+        )
+        st.plotly_chart(fig)
+
+        # ----------- DESCARGA DE RESULTADOS -----------
         archivo_salida = "resultado_correos.xlsx"
         df.to_excel(archivo_salida, index=False)
         with open(archivo_salida, "rb") as file:
-            st.download_button("📥 Descargar resultado", file, file_name=archivo_salida)
+            st.download_button("📥 Descargar archivo con resultados detallados", file, file_name=archivo_salida)
 
 # ----------- PIE DE PÁGINA -----------
 st.markdown("""<footer>By José L. Robles</footer>""", unsafe_allow_html=True)
