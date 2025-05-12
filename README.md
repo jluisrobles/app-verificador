@@ -35,3 +35,28 @@ Este script realiza los siguientes pasos:
 ## Ejemplo de Archivo Excel
 
 Asegúrate de que tu archivo Excel tenga una columna llamada **E-mail** con
+# 📧 Validador de Correos Empresariales
+
+Esta aplicación desarrollada con **Streamlit** permite verificar listas de correos electrónicos empresariales cargadas desde un archivo Excel. Evalúa la validez de cada dirección tanto por su **formato** como por la existencia de **registros MX del dominio**, y genera un gráfico visual con los resultados.
+
+---
+
+## 🚀 ¿Qué hace esta app?
+
+- Valida que los correos tengan el **formato correcto** (`usuario@dominio.com`)
+- Verifica si el **dominio del correo tiene registros MX** (correo empresarial real)
+- Clasifica los correos como:
+  - ✅ Válidos
+  - ❌ Inválidos por formato
+  - ⚠️ Inválidos por dominio
+  - 🟥 Vacíos
+- Genera un **gráfico interactivo** con los resultados
+- Permite descargar un archivo Excel con la validación de cada correo
+
+---
+
+## 📥 Requisitos del archivo Excel
+
+El archivo que subas **debe tener una columna llamada exactamente**:
+
+
