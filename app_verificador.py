@@ -73,7 +73,11 @@ if archivo_cargado:
 
         st.success("✅ Verificación completada. Abajo se muestra la tabla.")
 
-        st.dataframe(df.style.highlight_null(null_color='red'))
+        # Aplicamos el estilo para resaltar los valores nulos
+        styled_df = df.style.highlight_null(null_color='red')
+
+        # Mostramos el DataFrame estilizado como HTML
+        st.markdown(styled_df.render(), unsafe_allow_html=True)
 
         archivo_salida = "resultado_correos.xlsx"
         df.to_excel(archivo_salida, index=False)
@@ -82,13 +86,3 @@ if archivo_cargado:
 
 # ----------- PIE DE PÁGINA -----------
 st.markdown("""<footer>By José L. Robles</footer>""", unsafe_allow_html=True)
-
-
-# In[ ]:
-
-
-
-
-
-
-
