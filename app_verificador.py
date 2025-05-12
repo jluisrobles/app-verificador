@@ -3,6 +3,7 @@ import re
 import dns.resolver
 import streamlit as st
 import plotly.express as px
+import time
 
 # ----------- CONFIGURACIÓN DE LA PÁGINA -----------
 st.set_page_config(page_title="Validador de Correos Empresariales", layout="centered")
@@ -39,6 +40,13 @@ st.markdown(custom_css, unsafe_allow_html=True)
 # ----------- TÍTULO -----------
 st.title("🔍 Validador de Correos Empresariales")
 
+# ----------- INSTRUCCIONES -----------
+st.markdown("""
+### 📄 Instrucciones
+- El archivo debe estar en formato `.xlsx`.
+- Debe contener una **columna llamada exactamente `E-mail`** (respetando mayúsculas).
+""")
+
 # ----------- FUNCIONES DE VALIDACIÓN -----------
 dominios_publicos = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com', 'live.com']
 
@@ -63,18 +71,33 @@ archivo_cargado = st.file_uploader("📁 Sube tu archivo Excel (.xlsx)", type=["
 
 if archivo_cargado:
     df = pd.read_excel(archivo_cargado)
+    df.columns = df.columns.str.strip()  # Limpia espacios en nombres de columna
 
     if 'E-mail' not in df.columns:
         st.error("❌ El archivo no contiene una columna llamada 'E-mail'.")
     else:
-        df['formato_valido'] = df['E-mail'].apply(es_correo_valido)
-        df['dominio_valido'] = df['E-mail'].apply(lambda x: dominio_tiene_mx(x) if es_correo_valido(x) else False)
+        progreso = st.progress(0, text="🔄 Validando correos...")
+
+        # ----------- VALIDACIÓN DE CORREOS CON PROGRESO -----------
+        total = len(df)
+        formato_valido = []
+        dominio_valido = []
+
+        for i, correo in enumerate(df['E-mail']):
+            es_valido = es_correo_valido(correo)
+            tiene_mx = dominio_tiene_mx(correo) if es_valido else False
+            formato_valido.append(es_valido)
+            dominio_valido.append(tiene_mx)
+            progreso.progress((i + 1) / total)
+
+        df['formato_valido'] = formato_valido
+        df['dominio_valido'] = dominio_valido
         df['correo_valido'] = df['formato_valido'] & df['dominio_valido']
 
+        progreso.empty()
         st.success("✅ Verificación completada.")
 
         # ----------- GRÁFICO DE RESULTADOS -----------
-        total = len(df)
         validos = df['correo_valido'].sum()
         invalidos_formato = ((df['formato_valido'] == False) & (df['E-mail'].notnull())).sum()
         invalidos_dominio = ((df['formato_valido']) & (df['dominio_valido'] == False)).sum()
@@ -86,9 +109,9 @@ if archivo_cargado:
         })
 
         fig = px.pie(
-            datos_grafico, 
-            names='Estado', 
-            values='Cantidad', 
+            datos_grafico,
+            names='Estado',
+            values='Cantidad',
             title='📊 Distribución de Correos Validados',
             color_discrete_sequence=px.colors.qualitative.Set3
         )
