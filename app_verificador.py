@@ -73,8 +73,8 @@ if archivo_cargado:
 
         st.success("✅ Verificación completada. Abajo se muestra la tabla.")
 
-        # Aplicamos el estilo para resaltar los valores nulos
-        styled_df = df.style.highlight_null(null_color='red')
+        # Usamos highlightnull de pandas para resaltar los valores nulos
+        styled_df = df.style.highlightnull(null_color='red')
 
         # Mostramos el DataFrame estilizado como HTML
         st.markdown(styled_df.render(), unsafe_allow_html=True)
