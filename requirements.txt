@@ -1,1 +1,4 @@
-streamlit\npandas\nopenpyxl\ndnspython
+streamlit
+pandas
+openpyxl
+dnspython
